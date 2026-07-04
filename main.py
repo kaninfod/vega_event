@@ -18,8 +18,30 @@ THUMBS_DIR = os.path.join(BASE_UPLOAD_DIR, "thumbs")
 for folder in [ORIGINALS_DIR, WEB_DIR, THUMBS_DIR]:
     os.makedirs(folder, exist_ok=True)
 
+# ... your existing setup code ...
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# --- VERSION FIX OVERRIDE ---
+_original_template_response = templates.TemplateResponse
+def universal_template_response(*args, **kwargs):
+    # If the first argument is a Request object, but we are on an older Starlette version, swap them
+    if args and not isinstance(args[0], str):
+        # Older Starlette: TemplateResponse(name, context)
+        # Newer Starlette: TemplateResponse(request, name, context)
+        try:
+            return _original_template_response(*args, **kwargs)
+        except (TypeError, ValueError):
+            # Fallback for your local machine: extract variables and re-align positionally
+            request_obj = args[0]
+            template_name = args[1]
+            context_dict = args[2] if len(args) > 2 else {}
+            context_dict["request"] = request_obj
+            return _original_template_response(template_name, context_dict)
+    return _original_template_response(*args, **kwargs)
+
+templates.TemplateResponse = universal_template_response
+# -----------------------------
 
 
 @app.post("/upload")

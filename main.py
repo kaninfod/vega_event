@@ -60,21 +60,17 @@ async def handle_upload(files: list[UploadFile] = File(...)):
             print(f"Error processing image {file.filename}: {e}")
                 
     return RedirectResponse(url="/gallery", status_code=303)
-
-
-
-
+    
 @app.get("/", response_class=HTMLResponse)
 async def view_upload_form(request: Request):
-    # Pass the name first, and explicitly include request in the context dictionary
-    return templates.TemplateResponse("upload.html", {"request": request})
+    # Explicitly name the arguments so both old and new Starlette understand it
+    return templates.TemplateResponse(name="upload.html", context={"request": request})
 
 @app.get("/gallery", response_class=HTMLResponse)
 async def view_gallery(request: Request):
-    # Read from thumbs directory to verify what's ready to show
     photos = os.listdir(THUMBS_DIR)
     photos = [p for p in photos if p.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
     photos.sort(key=lambda x: os.path.getmtime(os.path.join(THUMBS_DIR, x)), reverse=True)
     
-    # Explicitly combine everything into the context dictionary
-    return templates.TemplateResponse("gallery.html", {"request": request, "photos": photos})    
+    # Explicitly name name and context here as well
+    return templates.TemplateResponse(name="gallery.html", context={"request": request, "photos": photos})

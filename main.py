@@ -14,11 +14,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-@app.get("/", response_class=HTMLResponse)
-async def view_upload_form(request: Request):
-    # Render the upload landing page
-    return templates.TemplateResponse("upload.html", {"request": request})
-
 @app.post("/upload")
 async def handle_upload(files: list[UploadFile] = File(...)):
     for file in files:
@@ -33,13 +28,18 @@ async def handle_upload(files: list[UploadFile] = File(...)):
                 
     return RedirectResponse(url="/gallery", status_code=303)
 
+
+
+@app.get("/", response_class=HTMLResponse)
+async def view_upload_form(request: Request):
+    # Pass 'request' explicitly as a keyword argument
+    return templates.TemplateResponse(request, "upload.html")
+
 @app.get("/gallery", response_class=HTMLResponse)
 async def view_gallery(request: Request):
-    # List all files in the upload directory, sorted by newest first
     photos = os.listdir(UPLOAD_DIR)
-    # Filter to ensure only images are loaded if needed
     photos = [p for p in photos if p.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-    # Sort by creation time so newest uploads appear at the top
     photos.sort(key=lambda x: os.path.getmtime(os.path.join(UPLOAD_DIR, x)), reverse=True)
     
-    return templates.TemplateResponse("gallery.html", {"request": request, "photos": photos})
+    # Pass 'request' first, then pass additional context variables as kwargs
+    return templates.TemplateResponse(request, "gallery.html", {"photos": photos})    

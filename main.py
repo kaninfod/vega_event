@@ -61,10 +61,12 @@ async def handle_upload(files: list[UploadFile] = File(...)):
                 
     return RedirectResponse(url="/gallery", status_code=303)
     
+
 @app.get("/", response_class=HTMLResponse)
 async def view_upload_form(request: Request):
-    # Explicitly name the arguments so both old and new Starlette understand it
-    return templates.TemplateResponse(name="upload.html", context={"request": request})
+    # Pass request as the FIRST positional argument, 
+    # AND include it explicitly in the context dictionary for backwards compatibility
+    return templates.TemplateResponse(request, "upload.html", {"request": request})
 
 @app.get("/gallery", response_class=HTMLResponse)
 async def view_gallery(request: Request):
@@ -72,5 +74,5 @@ async def view_gallery(request: Request):
     photos = [p for p in photos if p.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
     photos.sort(key=lambda x: os.path.getmtime(os.path.join(THUMBS_DIR, x)), reverse=True)
     
-    # Explicitly name name and context here as well
-    return templates.TemplateResponse(name="gallery.html", context={"request": request, "photos": photos})
+    # Same double-delivery layout here
+    return templates.TemplateResponse(request, "gallery.html", {"request": request, "photos": photos})

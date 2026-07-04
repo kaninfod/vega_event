@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Gallery</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 16px;
+            color: #333;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .upload-btn {
+            background-color: #0070f3;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            /* Creates a responsive grid without media queries */
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 8px;
+        }
+
+        .gallery-item {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+            /* Keeps the item a perfect square aspect ratio */
+            overflow: hidden;
+            border-radius: 8px;
+            background-color: #eee;
+        }
+
+        .gallery-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Crops the image dynamically to fill the square */
+            transition: transform 0.2s;
+        }
+
+        /* Desktop fallback spacing adjustment */
+        @media (min-width: 600px) {
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>📸 Event Photos</h1>
+        <a href="/" class="upload-btn">+ Upload More</a>
+    </header>
+
+    <div class="gallery-grid">
+        {% for photo in photos %}
+        <div class="gallery-item">
+            <a href="/static/uploads/{{ photo }}" target="_blank">
+                <img src="/static/uploads/{{ photo }}" alt="Guest photo">
+            </a>
+        </div>
+        {% else %}
+        <p style="grid-column: 1/-1; text-align: center; color: #777; margin-top: 40px;">
+            No photos uploaded yet. Be the first!
+        </p>
+        {% endfor %}
+    </div>
+
+</body>
+
+</html>

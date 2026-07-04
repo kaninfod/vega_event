@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Upload Event Photos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            color: #333;
+        }
+
+        .upload-card {
+            background: white;
+            padding: 32px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin: 0 0 8px 0;
+        }
+
+        p {
+            color: #666;
+            font-size: 0.95rem;
+            margin: 0 0 24px 0;
+        }
+
+        /* Hide the ugly default file input */
+        .file-input-hidden {
+            display: none;
+        }
+
+        /* Style a beautiful custom button that looks native */
+        .custom-file-label {
+            display: inline-block;
+            background-color: #0070f3;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .custom-file-label:active {
+            background-color: #0051b3;
+        }
+
+        /* Subtle info text about the selected file count */
+        #file-count-text {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #0070f3;
+            font-weight: 500;
+            min-height: 18px;
+        }
+
+        /* Submit Button (Hidden until files are picked) */
+        .submit-btn {
+            display: none;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 14px 28px;
+            border-radius: 8px;
+            width: 100%;
+            margin-top: 16px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        .submit-btn:active {
+            background-color: #059669;
+        }
+
+        /* Loading Spinner Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0070f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .view-gallery-link {
+            display: inline-block;
+            margin-top: 24px;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="upload-card">
+        <h1>📸 Share Your Photos</h1>
+        <p>Select or snap multiple photos from your phone to add them to the collective gallery!</p>
+
+        <form action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
+
+            <label for="file-picker" class="custom-file-label" id="picker-label">
+                📱 Select Photos
+            </label>
+            <input type="file" id="file-picker" name="files" accept="image/*" multiple class="file-input-hidden">
+
+            <div id="file-count-text"></div>
+
+            <button type="submit" class="submit-btn" id="submit-button">
+                🚀 Upload to Gallery
+            </button>
+        </form>
+
+        <a href="/gallery" class="view-gallery-link">Just view the gallery →</a>
+    </div>
+
+    <div class="loading-overlay" id="loading-screen">
+        <div class="spinner"></div>
+        <div class="loading-text">Uploading photos... Please don't close this tab.</div>
+    </div>
+
+    <script>
+        const filePicker = document.getElementById('file-picker');
+        const fileCountText = document.getElementById('file-count-text');
+        const submitButton = document.getElementById('submit-button');
+        const pickerLabel = document.getElementById('picker-label');
+        const uploadForm = document.getElementById('upload-form');
+        const loadingScreen = document.getElementById('loading-screen');
+
+        // Dynamically handle file selection UX updates
+        filePicker.addEventListener('change', function () {
+            const count = this.files.length;
+            if (count > 0) {
+                fileCountText.textContent = `Selected ${count} file${count > 1 ? 's' : ''}`;
+                pickerLabel.textContent = "🔄 Change Selection";
+                submitButton.style.display = "block"; // Reveal the green submit button
+            } else {
+                fileCountText.textContent = "";
+                pickerLabel.textContent = "📱 Select Photos";
+                submitButton.style.display = "none";
+            }
+        });
+
+        // Intercept form submission to display the processing spinner
+        uploadForm.addEventListener('submit', function () {
+            loadingScreen.style.display = 'flex';
+        });
+    </script>
+
+</body>
+
+</html>

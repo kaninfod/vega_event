@@ -4,42 +4,71 @@ from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from PIL import Image, ImageOps
+import io
 
 app = FastAPI()
 
-# Setup directories
-UPLOAD_DIR = "static/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Setup structured directories
+BASE_UPLOAD_DIR = "static/uploads"
+ORIGINALS_DIR = os.path.join(BASE_UPLOAD_DIR, "originals")
+WEB_DIR = os.path.join(BASE_UPLOAD_DIR, "web")
+THUMBS_DIR = os.path.join(BASE_UPLOAD_DIR, "thumbs")
+
+for folder in [ORIGINALS_DIR, WEB_DIR, THUMBS_DIR]:
+    os.makedirs(folder, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+@app.get("/", response_class=HTMLResponse)
+async def view_upload_form(request: Request):
+    return templates.TemplateResponse(request, "upload.html")
+
 @app.post("/upload")
 async def handle_upload(files: list[UploadFile] = File(...)):
     for file in files:
-        if file.filename:
-            # Give files a unique name to prevent overwriting
-            file_extension = os.path.splitext(file.filename)[1]
-            unique_filename = f"{uuid.uuid4()}{file_extension}"
-            file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        if not file.filename:
+            continue
             
-            with open(file_path, "wb") as buffer:
-                buffer.write(await file.read())
+        # 1. Generate a unique filename and read bytes
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        if file_extension not in ['.jpg', '.jpeg', '.png', '.webp']:
+            continue # Skip non-image files
+            
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_bytes = await file.read()
+        
+        # 2. Save the Original untouched file
+        original_path = os.path.join(ORIGINALS_DIR, unique_filename)
+        with open(original_path, "wb") as buffer:
+            buffer.write(file_bytes)
+            
+        # 3. Process Web & Thumbnails using Pillow
+        try:
+            # Open image in memory and auto-rotate based on mobile EXIF data
+            img = Image.open(io.BytesIO(file_bytes))
+            img = ImageOps.exif_transpose(img) 
+            
+            # Create & Save Web-Optimized Version (Max 1600px width/height maintaining aspect ratio)
+            web_img = img.copy()
+            web_img.thumbnail((1600, 1600), Image.Resampling.LANCZOS)
+            web_img.save(os.path.join(WEB_DIR, unique_filename), quality=85)
+            
+            # Create & Save Thumbnail (300x300 hard cropped square for perfect grid alignment)
+            thumb_img = ImageOps.fit(img, (300, 300), Image.Resampling.LANCZOS)
+            thumb_img.save(os.path.join(THUMBS_DIR, unique_filename), quality=80)
+            
+        except Exception as e:
+            print(f"Error processing image {file.filename}: {e}")
                 
     return RedirectResponse(url="/gallery", status_code=303)
 
-
-
-@app.get("/", response_class=HTMLResponse)
-async def view_upload_form(request: Request):
-    # Pass 'request' explicitly as a keyword argument
-    return templates.TemplateResponse(request, "upload.html")
-
 @app.get("/gallery", response_class=HTMLResponse)
 async def view_gallery(request: Request):
-    photos = os.listdir(UPLOAD_DIR)
+    # Read from thumbs directory to verify what's ready to show
+    photos = os.listdir(THUMBS_DIR)
     photos = [p for p in photos if p.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-    photos.sort(key=lambda x: os.path.getmtime(os.path.join(UPLOAD_DIR, x)), reverse=True)
+    photos.sort(key=lambda x: os.path.getmtime(os.path.join(THUMBS_DIR, x)), reverse=True)
     
-    # Pass 'request' first, then pass additional context variables as kwargs
-    return templates.TemplateResponse(request, "gallery.html", {"photos": photos})    
+    return templates.TemplateResponse(request, "gallery.html", {"photos": photos})

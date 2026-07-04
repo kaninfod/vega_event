@@ -21,9 +21,6 @@ for folder in [ORIGINALS_DIR, WEB_DIR, THUMBS_DIR]:
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-@app.get("/", response_class=HTMLResponse)
-async def view_upload_form(request: Request):
-    return templates.TemplateResponse(request, "upload.html")
 
 @app.post("/upload")
 async def handle_upload(files: list[UploadFile] = File(...)):
@@ -64,6 +61,14 @@ async def handle_upload(files: list[UploadFile] = File(...)):
                 
     return RedirectResponse(url="/gallery", status_code=303)
 
+
+
+
+@app.get("/", response_class=HTMLResponse)
+async def view_upload_form(request: Request):
+    # Pass the name first, and explicitly include request in the context dictionary
+    return templates.TemplateResponse("upload.html", {"request": request})
+
 @app.get("/gallery", response_class=HTMLResponse)
 async def view_gallery(request: Request):
     # Read from thumbs directory to verify what's ready to show
@@ -71,4 +76,5 @@ async def view_gallery(request: Request):
     photos = [p for p in photos if p.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
     photos.sort(key=lambda x: os.path.getmtime(os.path.join(THUMBS_DIR, x)), reverse=True)
     
-    return templates.TemplateResponse(request, "gallery.html", {"photos": photos})
+    # Explicitly combine everything into the context dictionary
+    return templates.TemplateResponse("gallery.html", {"request": request, "photos": photos})    
